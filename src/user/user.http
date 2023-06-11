@@ -1,0 +1,25 @@
+### 생성
+POST http://localhost:4000/user/create
+content-type: application/json
+
+{
+    "username": "andy",
+    "password": "test1234",
+    "email": "andy@podo.com"
+}
+
+### 찾기
+GET http://localhost:4000/user/getUser/andy@podo.com
+
+### 업데이트
+PUT http://localhost:4000/user/update/andy@podo.com
+content-type: application/json
+
+{
+    "email": "andy@podo.com",
+    "username": "andy2",
+    "password": "test12345"
+}
+
+### 삭제
+DELETE http://localhost:4000/user/delete/andy@podo.com
