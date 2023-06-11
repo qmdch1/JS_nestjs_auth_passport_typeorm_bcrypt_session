@@ -50,4 +50,4 @@ content-type: application/json
 }
 
 ### 인증 테스트 3
-GET http://localhost:3000/auth/test-guard2
+GET http://localhost:4000/auth/test-guard2
