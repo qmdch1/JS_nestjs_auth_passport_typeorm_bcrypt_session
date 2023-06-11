@@ -53,6 +53,7 @@ export class AuthenticatedGuard implements CanActivate{
         const request = context.switchToHttp().getRequest();
         return request.isAuthenticated();
     }
+<<<<<<< HEAD
 }
 
 
@@ -67,4 +68,6 @@ export class GoogleAuthGuard extends AuthGuard('google'){
         const request = context.switchToHttp().getRequest();
         return result;
     }
+=======
+>>>>>>> origin/master
 }
