@@ -65,6 +65,7 @@ export class GoogleAuthGuard extends AuthGuard('google'){
 
         // 컨텍스트에서 리퀘스트 객체를 꺼냄
         const request = context.switchToHttp().getRequest();
+        await super.logIn(request);
         return result;
     }
 }

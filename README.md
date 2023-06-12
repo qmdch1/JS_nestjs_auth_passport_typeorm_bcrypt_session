@@ -12,39 +12,15 @@ express-session (세션 정보를 다룸)
 
 <br><br>
 
-# 작성 후기
-다른 내용은 직관적으로 이해가 되고, 쉬운 내용이지만 
+# 목차
+- CRUD 개발하기
+- 전역 ValidationPipe 설정하기 (데이터 검증하기)
+- 회원가입, 비밀번호 암호화, 쿠키로 인증
+- 가드 미들웨어로 인증하기
+- 패스포트의 스트래티지파일과, 세션으로 인증하기 (어려우니 집중하시오)
+- 작성 후기 
 
-패스포트의 스트래티지파일과, 세션으로 인증하기 (어려우니 집중하세요)
 
-위 파트는 특히나 너무 이해가 안되었습니다. 이유는 module의 imports, providers를 보지 않아서 입니다.
-
-위의 내용을 보지 못하고 이해하려고 하다보니, 상속을 받으면 패키지에서 자동으로 설정을 해주는줄 알았습니다.
-
-이해 못했던 내용들을 설명 드리면 auth.controller.ts의 login3이 LocalAuthGuard를 가드로 사용하는데,
-
-이는 auth.guard.ts 파일에서 실행 됩니다.
-
-AuthGuard('local')를 상속받고, super.canActivate(context)으로 result값을 가져 올때에 가드를 한번 더 사용하게 되는데, 이는 local.strategy.ts의 validate() 함수를 실행하게 됩니다.
-
-여기서 의문이 들텐데,
-1. 왜 local.strategy.ts를 실행 하는가?
-```
-auth.module 파일을 살펴보면 providers로 local.strategy 를 등록하기 떄문이다.
-```
-1. 왜 validate()가 기본 함수로 실행 되는가? 
-```
-PassportStrategy(Strategy)를 상속받을때 Strategy 클래스를 상속받게 되는데, 이는 validate() 함수를 기본으로 등록하기 때문이다.
-```
-1. 왜 super를 사용해야 하는가?
-```
-지금 생각하면 너무 간단했는데, 정리가 안되어서 이해하는데 오래 걸렸던것 같다.
-상속받은 AuthGuard('local')의 생성자 메서드를 실행하기 위해서다.
-```
-1. 왜 session.serailizer.ts를 실행하는가?
-```
-auth.module 파일을 살펴보면 providers로 session.serializer 를 등록하기 떄문이다.
-```
 
 <br><br>
 
@@ -65,6 +41,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
   ]
 })
 ```
+
+<br>
 
 ## 2. 엔티티 생성 user.entity.ts
 ```
@@ -88,6 +66,8 @@ export class User{
     createdDt: Date;
 }
 ```
+
+<br>
 
 ## 3. Repository 생성 및 사용법 user.service.ts
 ```
@@ -125,6 +105,8 @@ deleteUser(email: any){
 }
 ```
 
+<br>
+
 ## 4. Module에 Repository를 등록해주어야 service에서 찾을 수 있습니다.
 ```
 user.module.ts
@@ -133,6 +115,9 @@ user.module.ts
   imports: [TypeOrmModule.forFeature([User])],
 })
 ```
+
+<br>
+
 ## 5. Entity가 등록이 되어 있어야 typeorm에서 해당 엔티티에 대한 메타 데이터를 읽을 수 있습니다.
 ```
 app.module.ts
@@ -409,6 +394,8 @@ app.use(passport.initialize());
 app.use(passport.session()); // 저장소를 설정하지 않으면 메모리에 저장됨
 ```
 
+<br>
+
 ## 2. 로그인용 가드와 인증용 가드 추가
 ```
 auth.guard.ts
@@ -457,7 +444,8 @@ super.logIn(request) 에서는 로그인 처리를 하는데, 세션을 저장�
 
 request.isAuthenticated() 함수는 세션에서 정보를 읽어옵니다.
 ```
-<br><br>
+
+<br>
 
 ## 3. 세션에 정보를 저장하고 읽는 세션 시리얼라이저 구현하기
 ```
@@ -510,7 +498,7 @@ UserService에서 email로 유저 정보를 가져와야 하니, UserService를 
     serializeUser()에서 email만 저장을 했기 때문에 해당 정보가 payload로 전달됩니다.
     식별하는 데 email만 있으면 되기 떄문에 userService.getUser(payload)로 유저정보를 조회합니다.
 
-<br><br>
+<br>
 
 ## 4. AuthGuard('local')에 대한 Strategy 작성하기
 passport에는 local, oauth, jwt 등의 다양한 패키지가 있지만, id,pwd를 이용한 인증인 local을 사용합니다.
@@ -569,80 +557,203 @@ import { LocalStrategy } from './local.strategy';
 
 등록하지 않으면 클래스를 찾지 못해서 에러가 발생합니다.
 
+<br><br>
+
+# 구글 OAuth 로그인 구현
+## 1. 구글 클라우드(console.cloud.google.com)에서 웹 프로젝트 등록후, ID, Secret 을 .env에 등록한다.
+.env 환경변수를 사용하기 위해서 아래 패키지를 설치한다.
+```
+npm i @nestjs/config
+```
+```
+.env
+
+GOOGLE_CLIENT_ID=ID
+GOOGLE_CLIENT_SECRET=Secret
+```
+.env 환경변수를 가져오기 위해서 추가한다
+```
+app.module.ts
+
+ConfigModule.forRoot()
+```
+
+<br>
+
+## 2. 구글 OAuth 스트래테지 만들기
+```
+구글 OAuth 스트래티지를 지원하는 의존성 패키지 설치
+
+npm i passport-google-oauth20
+npm i -D @types/passport-google-oauth20
+```
+구글 스트래티지를 만들어준다.
+```
+import { Injectable } from '@nestjs/common'
+import { PassportStrategy } from '@nestjs/passport'
+import { Profile, Strategy } from 'passport-google-oauth20'
+import { User } from 'src/user/user.entity'
+import { UserService } from 'src/user/user.service'
+
+@Injectable()
+// PassportStrategy(Strategy) 상속
+export class GoogleStrategy extends PassportStrategy(Strategy){
+    constructor(private userService: UserService){
+        super({
+            clientID: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            callbackURL: 'http://localhost:4000/auth/google',
+            scope: ['email', 'profile'],
+        });
+    }
+
+    // OAuth 인증이 끝나고 콜백으로 실행되는 메서드
+    async validate(accessToken: string, refreshToken: string, profile: Profile){
+        const { id, name, emails} = profile;
+        console.log(accessToken);
+        console.log(refreshToken);
+
+        const providerId = id;
+        const email = emails[0].value;
+
+        const user: User = await this.userService.findByEmailOrSave(
+            email,
+            name.familyName + name.givenName,
+            providerId,
+        );
+
+        return user;
+    }
+}
+```
+
+<br>
+
+## 3. module에 googleStrategy 등록
+```
+auth.module.ts
+
+import { GoogleStrategy } from './google.strategy';
+
+providers: [AuthService, LocalStrategy, SessionSerializer, GoogleStrategy],
+```
+
+<br>
+
+## 4. GoogleAUthGuard 만들기
+```
+auth.guard.ts
+
+// 구글인증
+@Injectable()
+export class GoogleAuthGuard extends AuthGuard('google'){
+    async canActivate(context: any): Promise<boolean>{
+        // 부모 클래스의 메서드 사용
+        const result = (await super.canActivate(context)) as boolean;
+
+        // 컨텍스트에서 리퀘스트 객체를 꺼냄
+        const request = context.switchToHttp().getRequest();
+        await super.logIn(request); // 세션에 적용
+        return result;
+    }
+}
+```
+
+<br>
+
+## 5. 컨트롤러 추가
+```
+auth.controller.ts
+
+import { GoogleAuthGuard } from './auth.guard';
+
+// OAuth - 구글 로그인
+@Get('to-google')
+@UseGuards(GoogleAuthGuard)
+async googleAuth(@Request() req){}
+
+// OAuth - 구글 로그인 콜백
+@Get('google')
+@UseGuards(GoogleAuthGuard)
+async googleAuthRedirect(@Request() req, @Response() res){
+    const {user} = req;
+    return res.send(user);
+}
+```
+
+<br>
+
+## 6. user.service에 구글 유저 검색 및 저장 메서드 추가
+구글로그인에는, 비밀번호가 없고, 구글로그인 고유ID가 발급되니 수정,추가한다.
+```
+user.entity.ts
+
+@Column({ nullable: true })
+password: string;
+
+@Column({ nullable: true })
+providerId: string;
+```
+
+해당하는 email유저가 있으면 반환, 없으면 생성 후 반환 하는 서비스를 추가한다.
+```
+user.service.ts
+
+// 구글 이메일 로그인이며, 이메일로 유저를 찾고, 없다면 등록하는 함수
+async findByEmailOrSave(email, username, providerId): Promise<User>{
+    const foundUser = await this.getUser(email);
+    if(foundUser){
+        return foundUser;
+    }
+
+    const newUser = await this.userRepository.save({
+        email,
+        username,
+        providerId,
+    });
+    return newUser;
+}
+```
+
+<br><br>
+
+# 작성 후기
+다른 내용은 직관적으로 이해가 되고, 쉬운 내용이지만 
+
+패스포트의 스트래티지파일과, 세션으로 인증하기 (어려우니 집중하세요)
+
+위 파트는 특히나 너무 이해가 안되었습니다. 이유는 module의 imports, providers를 보지 않아서 입니다.
+
+위의 내용을 보지 못하고 이해하려고 하다보니, 상속을 받으면 패키지에서 자동으로 설정을 해주는줄 알았습니다.
+
+이해 못했던 내용들을 설명 드리면 auth.controller.ts의 login3이 LocalAuthGuard를 가드로 사용하는데,
+
+이는 auth.guard.ts 파일에서 실행 됩니다.
+
+AuthGuard('local')를 상속받고, super.canActivate(context)으로 result값을 가져 올때에 가드를 한번 더 사용하게 되는데, 이는 local.strategy.ts의 validate() 함수를 실행하게 됩니다.
+
+여기서 의문이 들텐데,
+1. 왜 local.strategy.ts를 실행 하는가?
+```
+auth.module 파일을 살펴보면 providers로 local.strategy 를 등록하기 떄문이다.
+```
+1. 왜 validate()가 기본 함수로 실행 되는가? 
+```
+PassportStrategy(Strategy)를 상속받을때 Strategy 클래스를 상속받게 되는데, 이는 validate() 함수를 기본으로 등록하기 때문이다.
+```
+1. 왜 super를 사용해야 하는가?
+```
+지금 생각하면 너무 간단했는데, 정리가 안되어서 이해하는데 오래 걸렸던것 같다.
+상속받은 AuthGuard('local')의 생성자 메서드를 실행하기 위해서다.
+```
+1. 왜 session.serailizer.ts를 실행하는가?
+```
+auth.module 파일을 살펴보면 providers로 session.serializer 를 등록하기 떄문이다.
+```
+
+
+
 
 <br><br><br><br><br><br>
 
-
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Installation
-
-```bash
-$ npm install
-```
-
-## Running the app
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+출처 - Node.js 백엔드 개발자 되기 (저자 : 박승규)

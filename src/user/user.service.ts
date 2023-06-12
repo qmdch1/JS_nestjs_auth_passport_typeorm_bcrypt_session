@@ -34,4 +34,19 @@ export class UserService {
     deleteUser(email: any){
         return this.userRepository.delete({ email });
     }
+
+    // 구글 이메일 로그인이며, 이메일로 유저를 찾고, 없다면 등록하는 함수
+    async findByEmailOrSave(email, username, providerId): Promise<User>{
+        const foundUser = await this.getUser(email);
+        if(foundUser){
+            return foundUser;
+        }
+
+        const newUser = await this.userRepository.save({
+            email,
+            username,
+            providerId,
+        });
+        return newUser;
+    }
 }
