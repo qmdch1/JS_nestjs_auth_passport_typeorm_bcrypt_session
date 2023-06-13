@@ -756,5 +756,4 @@ auth.module 파일을 살펴보면 providers로 session.serializer 를 등록하
 
 
 <br><br><br><br><br><br>
-
 출처 - Node.js 백엔드 개발자 되기 (저자 : 박승규)
