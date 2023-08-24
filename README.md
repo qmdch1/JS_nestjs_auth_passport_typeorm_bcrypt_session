@@ -390,8 +390,7 @@ app.use(
   }),
 );
 
-// passport 초기화 및 세션 저장소 초기화
-app.use(passport.initialize());
+app.use(passport.initialize()); // passport 초기화 및 세션 저장소 초기화
 app.use(passport.session()); // 저장소를 설정하지 않으면 메모리에 저장됨
 ```
 
